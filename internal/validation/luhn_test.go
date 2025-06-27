@@ -16,9 +16,9 @@ func TestLuhn(t *testing.T) {
 	}
 
 	for num, want := range cases {
-		t.Run(fmt.Sprintf("%d_should_be_%v", num, want), func(t *testing.T) {
+		t.Run(fmt.Sprintf("%s_should_be_%v", num, want), func(t *testing.T) {
 			if Luhn(num) != want {
-				t.Errorf("want %d to be %v", num, want)
+				t.Errorf("want %s to be %v", num, want)
 			}
 		})
 	}

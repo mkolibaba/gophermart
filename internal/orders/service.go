@@ -38,7 +38,6 @@ func NewService(querier gophermart.Querier, accrualClient gophermart.AccrualClie
 
 func (s *Service) StartAccrualFetching(ctx context.Context) {
 	ticker := time.NewTicker(fetchTick)
-	defer ticker.Stop()
 
 	worker := func(in <-chan *postgres.Order) {
 		for order := range in {
@@ -85,10 +84,12 @@ func (s *Service) StartAccrualFetching(ctx context.Context) {
 				if err != nil {
 					s.logger.Errorf("failed to get orders to process: %s", err)
 				}
+				s.logger.Debugf("there are %d orders to process", len(result))
 				for _, r := range result {
 					ch <- r
 				}
 			case <-ctx.Done():
+				ticker.Stop()
 				close(ch)
 				return
 			}

@@ -8,7 +8,7 @@ import (
 const (
 	defaultRunAddress           = "localhost:8080"
 	defaultDatabaseURI          = "postgres://postgres:postgres@localhost:5432/postgres"
-	defaultAccrualSystemAddress = "localhost:8081"
+	defaultAccrualSystemAddress = "http://localhost:8081"
 )
 
 type Config struct {

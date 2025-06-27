@@ -22,6 +22,8 @@ type (
 		UserSave(ctx context.Context, login string, password string) error
 		UserExists(ctx context.Context, login string) (bool, error)
 		UserGetForLoginAndPassword(ctx context.Context, login, password string) (*postgres.User, error)
+
+		// UserAddAccrualBalance начисляет на баланс пользователя заданную сумму
 		UserAddAccrualBalance(ctx context.Context, sum float64, login string) error
 	}
 
