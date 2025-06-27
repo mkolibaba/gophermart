@@ -1,0 +1,13 @@
+version: 3
+
+tasks:
+  gen:
+    vars:
+      SQLC_REPOSITORY: github.com/sqlc-dev/sqlc/cmd/sqlc@v1.27.0
+      SQLC_CONFIG: postgres/sqlc.yml
+    cmds:
+      - go run {{.SQLC_REPOSITORY}} generate -f {{.SQLC_CONFIG}}
+
+  run:
+    cmds:
+      - go run cmd/gophermart/main.go
