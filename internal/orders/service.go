@@ -69,6 +69,10 @@ func (s *Service) StartAccrualFetching(ctx context.Context) {
 					s.logger.Error(err)
 				}
 			}
+
+			// TODO: удалить
+			user, _ := s.UserGet(ctx, order.UserLogin)
+			s.logger.Debugf("just to check update: %+v", user)
 		}
 	}
 
