@@ -123,25 +123,21 @@ func (q *Queries) OrderSave(ctx context.Context, iD string, userLogin string) er
 	return err
 }
 
-const orderUpdateAccrualPoints = `-- name: OrderUpdateAccrualPoints :exec
+const orderUpdateAccrual = `-- name: OrderUpdateAccrual :exec
 update "order"
-set accrual_points = $1
-where id = $2
+set accrual_status = $1,
+    accrual_points = $2
+where id = $3
 `
 
-func (q *Queries) OrderUpdateAccrualPoints(ctx context.Context, accrualPoints *float64, iD string) error {
-	_, err := q.db.Exec(ctx, orderUpdateAccrualPoints, accrualPoints, iD)
-	return err
+type OrderUpdateAccrualParams struct {
+	AccrualStatus AccrualStatus
+	AccrualPoints *float64
+	ID            string
 }
 
-const orderUpdateAccrualStatus = `-- name: OrderUpdateAccrualStatus :exec
-update "order"
-set accrual_status = $1
-where id = $2
-`
-
-func (q *Queries) OrderUpdateAccrualStatus(ctx context.Context, accrualStatus AccrualStatus, iD string) error {
-	_, err := q.db.Exec(ctx, orderUpdateAccrualStatus, accrualStatus, iD)
+func (q *Queries) OrderUpdateAccrual(ctx context.Context, arg OrderUpdateAccrualParams) error {
+	_, err := q.db.Exec(ctx, orderUpdateAccrual, arg.AccrualStatus, arg.AccrualPoints, arg.ID)
 	return err
 }
 

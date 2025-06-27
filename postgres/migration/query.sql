@@ -41,15 +41,11 @@ from "order"
 where accrual_status not in ('INVALID', 'PROCESSED')
 limit $1;
 
--- name: OrderUpdateAccrualStatus :exec
+-- name: OrderUpdateAccrual :exec
 update "order"
-set accrual_status = $1
-where id = $2;
-
--- name: OrderUpdateAccrualPoints :exec
-update "order"
-set accrual_points = $1
-where id = $2;
+set accrual_status = $1,
+    accrual_points = $2
+where id = $3;
 
 -- name: WithdrawalGetAll :many
 select w.*

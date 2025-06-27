@@ -41,30 +41,25 @@ func (s *Service) StartAccrualFetching(ctx context.Context) {
 
 	worker := func(in <-chan *postgres.Order) {
 		for order := range in {
-			s.logger.Debugf("fetching info for order %s", order.ID)
 			response, err := s.accrualClient.GetOrder(ctx, order.ID)
 			if err != nil {
 				s.logger.Errorf("failed to get accrual response: %s", err)
 				return
 			}
-			s.logger.Debugf("received response: %+v", response)
 
 			if status, ok := accrualStatusMapping[response.Status]; ok {
 				err := s.DoInTx(ctx, func(qtx postgres.Querier) error {
-					s.logger.Debugf("setting order %s status to %s", order.ID, status)
-					if err := qtx.OrderUpdateAccrualStatus(ctx, status, order.ID); err != nil {
+					if err := qtx.OrderUpdateAccrual(ctx, postgres.OrderUpdateAccrualParams{
+						AccrualStatus: status,
+						AccrualPoints: response.Accrual,
+						ID:            order.ID,
+					}); err != nil {
 						return fmt.Errorf("accrual status update: %w", err)
 					}
 
 					if response.Status == "PROCESSED" {
-						s.logger.Debugf("updating user balance to %f", response.Accrual)
 						if err := qtx.UserAddAccrualBalance(ctx, *response.Accrual, order.UserLogin); err != nil {
 							return fmt.Errorf("accrual balance update: %w", err)
-						}
-
-						s.logger.Debugf("updating order accrual to %f", response.Accrual)
-						if err := qtx.OrderUpdateAccrualPoints(ctx, response.Accrual, order.ID); err != nil {
-							return fmt.Errorf("accrual order update: %w", err)
 						}
 					}
 
@@ -74,10 +69,6 @@ func (s *Service) StartAccrualFetching(ctx context.Context) {
 					s.logger.Error(err)
 				}
 			}
-
-			// TODO: удалить
-			user, _ := s.UserGet(ctx, order.UserLogin)
-			s.logger.Debugf("just to check update: %+v", user)
 		}
 	}
 
@@ -97,12 +88,10 @@ func (s *Service) StartAccrualFetching(ctx context.Context) {
 				if err != nil {
 					s.logger.Errorf("failed to get orders to process: %s", err)
 				}
-				s.logger.Debugf("there are %d orders to process", len(result))
 				for _, r := range result {
 					ch <- r
 				}
 			case <-ctx.Done():
-				s.logger.Debugf("stop fetching")
 				ticker.Stop()
 				close(ch)
 				return
