@@ -40,7 +40,7 @@ func GetClaims(tokenString string) (jwt.Claims, error) {
 		return nil, fmt.Errorf("auth: invalid token: %w", err)
 	}
 
-	if claims, ok := token.Claims.(jwt.RegisteredClaims); ok && token.Valid {
+	if claims := token.Claims; token.Valid {
 		return claims, nil
 	}
 

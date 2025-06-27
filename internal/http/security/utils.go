@@ -8,6 +8,6 @@ import (
 func RetrieveUserLoginFromContext(c echo.Context) string {
 	claims := c.Get("claims")
 	// имплементация всегда возвращает err = nil
-	subject, _ := claims.(jwt.RegisteredClaims).GetSubject()
+	subject, _ := claims.(jwt.Claims).GetSubject()
 	return subject
 }
