@@ -19,12 +19,12 @@ func main() {
 
 	cfg, err := config.New()
 	if err != nil {
-		fail(err)
+		stdlog.Fatal(err)
 	}
 
 	unsugaredLogger, err := zap.NewDevelopment()
 	if err != nil {
-		fail(err)
+		stdlog.Fatal(err)
 	}
 	logger := unsugaredLogger.Sugar()
 
@@ -32,7 +32,7 @@ func main() {
 
 	conn, err := pgx.Connect(ctx, cfg.DatabaseURI)
 	if err != nil {
-		fail(err)
+		logger.Fatal(err)
 	}
 
 	dbx := postgres.NewDBX(conn)
@@ -56,8 +56,4 @@ func main() {
 		WithdrawService: withdrawService,
 	}
 	server.Start(ctx)
-}
-
-func fail(err error) {
-	stdlog.Fatal(err)
 }
