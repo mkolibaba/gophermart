@@ -17,16 +17,16 @@ func (h *Handler) Create(c echo.Context) error {
 		// 400 — неверный формат запроса
 		return httperror.InvalidRequestBody(err)
 	}
-	orderId := string(payload)
+	orderID := string(payload)
 
-	if !validation.Luhn(orderId) {
+	if !validation.Luhn(orderID) {
 		// 422 — неверный формат номера заказа
 		return echo.NewHTTPError(http.StatusUnprocessableEntity, "invalid order id")
 	}
 
 	userLogin := security.RetrieveUserLoginFromContext(c)
 
-	order, err := h.orderService.OrderGet(c.Request().Context(), orderId)
+	order, err := h.orderService.OrderGet(c.Request().Context(), orderID)
 	if err == nil {
 		if order.UserLogin != userLogin {
 			// 409 — номер заказа уже был загружен другим пользователем
@@ -41,7 +41,7 @@ func (h *Handler) Create(c echo.Context) error {
 		return httperror.InternalServerError(err)
 	}
 
-	if err := h.orderService.OrderSave(c.Request().Context(), orderId, userLogin); err != nil {
+	if err := h.orderService.OrderSave(c.Request().Context(), orderID, userLogin); err != nil {
 		return httperror.InternalServerError(err)
 	}
 
