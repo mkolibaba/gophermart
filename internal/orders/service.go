@@ -63,19 +63,21 @@ func (s *Service) StartAccrualFetching(ctx context.Context) {
 		go worker(ch)
 	}
 
-	for {
-		select {
-		case <-ticker.C:
-			result, err := s.OrderGetWithNonFinalAccrualStatus(ctx, ordersBatchSize)
-			if err != nil {
-				s.logger.Errorf("failed to get orders to process: %s", err)
+	go func() {
+		for {
+			select {
+			case <-ticker.C:
+				result, err := s.OrderGetWithNonFinalAccrualStatus(ctx, ordersBatchSize)
+				if err != nil {
+					s.logger.Errorf("failed to get orders to process: %s", err)
+				}
+				for _, r := range result {
+					ch <- r
+				}
+			case <-ctx.Done():
+				close(ch)
+				return
 			}
-			for _, r := range result {
-				ch <- r
-			}
-		case <-ctx.Done():
-			close(ch)
-			return
 		}
-	}
+	}()
 }
