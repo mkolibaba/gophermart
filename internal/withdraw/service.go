@@ -39,6 +39,6 @@ func (s *Service) WithdrawBalance(ctx context.Context, userLogin string, orderID
 		}
 
 		// обновляем баланс пользователя
-		return qtx.UserUpdateAccrualBalance(ctx, user.AccrualBalance-sum, userLogin)
+		return qtx.UserAddAccrualBalance(ctx, -sum, userLogin)
 	})
 }

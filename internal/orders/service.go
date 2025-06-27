@@ -2,6 +2,7 @@ package orders
 
 import (
 	"context"
+	"fmt"
 	"github.com/mkolibaba/gophermart"
 	"github.com/mkolibaba/gophermart/postgres/gen"
 	"go.uber.org/zap"
@@ -48,8 +49,21 @@ func (s *Service) StartAccrualFetching(ctx context.Context) {
 			}
 
 			if status, ok := accrualStatusMapping[response.Status]; ok {
-				if err := s.OrderUpdateAccrualStatus(ctx, status, order.ID); err != nil {
-					s.logger.Errorf("failed to update order accrual status: %s", err)
+				err := s.DoInTx(ctx, func(qtx postgres.Querier) error {
+					if err := qtx.OrderUpdateAccrualStatus(ctx, status, order.ID); err != nil {
+						return fmt.Errorf("accrual status update: %w", err)
+					}
+
+					if response.Status == "PROCESSED" {
+						if err := qtx.UserAddAccrualBalance(ctx, response.Accrual, order.UserLogin); err != nil {
+							return fmt.Errorf("accrual balance update: %w", err)
+						}
+					}
+
+					return nil
+				})
+				if err != nil {
+					s.logger.Error(err)
 				}
 			}
 		}

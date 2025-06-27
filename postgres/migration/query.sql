@@ -10,9 +10,9 @@ select exists (select 1 from "user" where login = $1);
 insert into "user" (login, password)
 values ($1, $2);
 
--- name: UserUpdateAccrualBalance :exec
+-- name: UserAddAccrualBalance :exec
 update "user"
-set accrual_balance = $1
+set accrual_balance = accrual_balance + $1
 where login = $2;
 
 -- name: UserGetForLoginAndPassword :one

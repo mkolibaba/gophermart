@@ -134,6 +134,17 @@ func (q *Queries) OrderUpdateAccrualStatus(ctx context.Context, accrualStatus Ac
 	return err
 }
 
+const userAddAccrualBalance = `-- name: UserAddAccrualBalance :exec
+update "user"
+set accrual_balance = accrual_balance + $1
+where login = $2
+`
+
+func (q *Queries) UserAddAccrualBalance(ctx context.Context, accrualBalance float64, login string) error {
+	_, err := q.db.Exec(ctx, userAddAccrualBalance, accrualBalance, login)
+	return err
+}
+
 const userExists = `-- name: UserExists :one
 select exists (select 1 from "user" where login = $1)
 `
@@ -179,17 +190,6 @@ values ($1, $2)
 
 func (q *Queries) UserSave(ctx context.Context, login string, password string) error {
 	_, err := q.db.Exec(ctx, userSave, login, password)
-	return err
-}
-
-const userUpdateAccrualBalance = `-- name: UserUpdateAccrualBalance :exec
-update "user"
-set accrual_balance = $1
-where login = $2
-`
-
-func (q *Queries) UserUpdateAccrualBalance(ctx context.Context, accrualBalance float64, login string) error {
-	_, err := q.db.Exec(ctx, userUpdateAccrualBalance, accrualBalance, login)
 	return err
 }
 

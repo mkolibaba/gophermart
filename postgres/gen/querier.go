@@ -15,11 +15,11 @@ type Querier interface {
 	OrderGetWithNonFinalAccrualStatus(ctx context.Context, limit int32) ([]*Order, error)
 	OrderSave(ctx context.Context, iD string, userLogin string) error
 	OrderUpdateAccrualStatus(ctx context.Context, accrualStatus AccrualStatus, iD string) error
+	UserAddAccrualBalance(ctx context.Context, accrualBalance float64, login string) error
 	UserExists(ctx context.Context, login string) (bool, error)
 	UserGet(ctx context.Context, login string) (*User, error)
 	UserGetForLoginAndPassword(ctx context.Context, login string, password string) (*User, error)
 	UserSave(ctx context.Context, login string, password string) error
-	UserUpdateAccrualBalance(ctx context.Context, accrualBalance float64, login string) error
 	WithdrawalGetAll(ctx context.Context, userLogin string) ([]*Withdrawal, error)
 	WithdrawalSave(ctx context.Context, arg WithdrawalSaveParams) error
 }
