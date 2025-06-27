@@ -54,8 +54,7 @@ where id = $2;
 -- name: WithdrawalGetAll :many
 select w.*
 from withdrawal w
-         join "order" o on o.id = w.order_number
-where o.user_login = $1;
+where w.user_login = $1;
 
 -- name: WithdrawalSave :exec
 insert into withdrawal (order_number, user_login, sum)

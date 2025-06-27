@@ -207,8 +207,7 @@ func (q *Queries) UserSave(ctx context.Context, login string, password string) e
 const withdrawalGetAll = `-- name: WithdrawalGetAll :many
 select w.id, w.order_number, w.user_login, w.sum, w.processed_at
 from withdrawal w
-         join "order" o on o.id = w.order_number
-where o.user_login = $1
+where w.user_login = $1
 `
 
 func (q *Queries) WithdrawalGetAll(ctx context.Context, userLogin string) ([]*Withdrawal, error) {
