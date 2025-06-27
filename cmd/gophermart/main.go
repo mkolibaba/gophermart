@@ -15,7 +15,8 @@ import (
 )
 
 func main() {
-	ctx := context.Background()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
 	cfg, err := config.New()
 	if err != nil {

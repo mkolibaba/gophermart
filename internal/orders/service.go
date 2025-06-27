@@ -41,19 +41,23 @@ func (s *Service) StartAccrualFetching(ctx context.Context) {
 
 	worker := func(in <-chan *postgres.Order) {
 		for order := range in {
+			s.logger.Debugf("fetching info for order %s", order.ID)
 			response, err := s.accrualClient.GetOrder(ctx, order.ID)
 			if err != nil {
 				s.logger.Errorf("failed to get accrual response: %s", err)
 				return
 			}
+			s.logger.Debugf("received response: %+v", response)
 
 			if status, ok := accrualStatusMapping[response.Status]; ok {
 				err := s.DoInTx(ctx, func(qtx postgres.Querier) error {
+					s.logger.Debugf("setting order %s status to %s", order.ID, status)
 					if err := qtx.OrderUpdateAccrualStatus(ctx, status, order.ID); err != nil {
 						return fmt.Errorf("accrual status update: %w", err)
 					}
 
 					if response.Status == "PROCESSED" {
+						s.logger.Debugf("updating order status to %d", response.Accrual)
 						if err := qtx.UserAddAccrualBalance(ctx, response.Accrual, order.UserLogin); err != nil {
 							return fmt.Errorf("accrual balance update: %w", err)
 						}
@@ -89,6 +93,7 @@ func (s *Service) StartAccrualFetching(ctx context.Context) {
 					ch <- r
 				}
 			case <-ctx.Done():
+				s.logger.Debugf("stop fetching")
 				ticker.Stop()
 				close(ch)
 				return
