@@ -10,22 +10,22 @@ import (
 )
 
 const balanceGet = `-- name: BalanceGet :one
-select cast(sum(w.sum) as double precision) as "current", u.accrual_balance as withdrawn
-from withdrawal w
-         join "user" u on u.login = w.user_login
+select
+    cast(coalesce((select sum(w.sum) from withdrawal w where w.user_login = u.login), 0) as double precision) as withdrawn,
+    u.accrual_balance as "current"
+from "user" u
 where u.login = $1
-group by u.accrual_balance
 `
 
 type BalanceGetRow struct {
-	Current   float64
 	Withdrawn float64
+	Current   float64
 }
 
 func (q *Queries) BalanceGet(ctx context.Context, login string) (*BalanceGetRow, error) {
 	row := q.db.QueryRow(ctx, balanceGet, login)
 	var i BalanceGetRow
-	err := row.Scan(&i.Current, &i.Withdrawn)
+	err := row.Scan(&i.Withdrawn, &i.Current)
 	return &i, err
 }
 

@@ -57,8 +57,8 @@ insert into withdrawal (order_number, user_login, sum)
 values ($1, $2, $3);
 
 -- name: BalanceGet :one
-select cast(sum(w.sum) as double precision) as "current", u.accrual_balance as withdrawn
-from withdrawal w
-         join "user" u on u.login = w.user_login
-where u.login = $1
-group by u.accrual_balance;
+select
+    cast(coalesce((select sum(w.sum) from withdrawal w where w.user_login = u.login), 0) as double precision) as withdrawn,
+    u.accrual_balance as "current"
+from "user" u
+where u.login = $1;
