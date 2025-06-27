@@ -22,7 +22,7 @@ type (
 		UserSave(ctx context.Context, login string, password string) error
 		UserExists(ctx context.Context, login string) (bool, error)
 		UserGetForLoginAndPassword(ctx context.Context, login, password string) (*postgres.User, error)
-		UserUpdateAccrualBalance(ctx context.Context, accrualBalance float64, login string) error
+		UserAddAccrualBalance(ctx context.Context, sum float64, login string) error
 	}
 
 	BalanceService interface {
