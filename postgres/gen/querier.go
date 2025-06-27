@@ -14,6 +14,7 @@ type Querier interface {
 	OrderGetAll(ctx context.Context, userLogin string) ([]*Order, error)
 	OrderGetWithNonFinalAccrualStatus(ctx context.Context, limit int32) ([]*Order, error)
 	OrderSave(ctx context.Context, iD string, userLogin string) error
+	OrderUpdateAccrualPoints(ctx context.Context, accrualPoints *float64, iD string) error
 	OrderUpdateAccrualStatus(ctx context.Context, accrualStatus AccrualStatus, iD string) error
 	UserAddAccrualBalance(ctx context.Context, accrualBalance float64, login string) error
 	UserExists(ctx context.Context, login string) (bool, error)

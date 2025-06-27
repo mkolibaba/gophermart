@@ -10,9 +10,9 @@ import (
 )
 
 const balanceGet = `-- name: BalanceGet :one
-select
-    cast(coalesce((select sum(w.sum) from withdrawal w where w.user_login = u.login), 0) as double precision) as withdrawn,
-    u.accrual_balance as "current"
+select cast(coalesce((select sum(w.sum) from withdrawal w where w.user_login = u.login),
+                     0) as double precision) as withdrawn,
+       u.accrual_balance                     as "current"
 from "user" u
 where u.login = $1
 `
@@ -120,6 +120,17 @@ values ($1, $2)
 
 func (q *Queries) OrderSave(ctx context.Context, iD string, userLogin string) error {
 	_, err := q.db.Exec(ctx, orderSave, iD, userLogin)
+	return err
+}
+
+const orderUpdateAccrualPoints = `-- name: OrderUpdateAccrualPoints :exec
+update "order"
+set accrual_points = $1
+where id = $2
+`
+
+func (q *Queries) OrderUpdateAccrualPoints(ctx context.Context, accrualPoints *float64, iD string) error {
+	_, err := q.db.Exec(ctx, orderUpdateAccrualPoints, accrualPoints, iD)
 	return err
 }
 

@@ -58,8 +58,13 @@ func (s *Service) StartAccrualFetching(ctx context.Context) {
 
 					if response.Status == "PROCESSED" {
 						s.logger.Debugf("updating user balance to %f", response.Accrual)
-						if err := qtx.UserAddAccrualBalance(ctx, response.Accrual, order.UserLogin); err != nil {
+						if err := qtx.UserAddAccrualBalance(ctx, *response.Accrual, order.UserLogin); err != nil {
 							return fmt.Errorf("accrual balance update: %w", err)
+						}
+
+						s.logger.Debugf("updating order accrual to %f", response.Accrual)
+						if err := qtx.OrderUpdateAccrualPoints(ctx, response.Accrual, order.ID); err != nil {
+							return fmt.Errorf("accrual order update: %w", err)
 						}
 					}
 

@@ -46,6 +46,11 @@ update "order"
 set accrual_status = $1
 where id = $2;
 
+-- name: OrderUpdateAccrualPoints :exec
+update "order"
+set accrual_points = $1
+where id = $2;
+
 -- name: WithdrawalGetAll :many
 select w.*
 from withdrawal w
@@ -57,8 +62,8 @@ insert into withdrawal (order_number, user_login, sum)
 values ($1, $2, $3);
 
 -- name: BalanceGet :one
-select
-    cast(coalesce((select sum(w.sum) from withdrawal w where w.user_login = u.login), 0) as double precision) as withdrawn,
-    u.accrual_balance as "current"
+select cast(coalesce((select sum(w.sum) from withdrawal w where w.user_login = u.login),
+                     0) as double precision) as withdrawn,
+       u.accrual_balance                     as "current"
 from "user" u
 where u.login = $1;
