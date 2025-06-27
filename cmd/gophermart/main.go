@@ -3,12 +3,14 @@ package main
 import (
 	"context"
 	"github.com/jackc/pgx/v5"
+	"github.com/labstack/gommon/log"
 	"github.com/mkolibaba/gophermart/internal/config"
 	"github.com/mkolibaba/gophermart/internal/http"
 	"github.com/mkolibaba/gophermart/internal/http/client/accrual"
 	"github.com/mkolibaba/gophermart/internal/orders"
 	"github.com/mkolibaba/gophermart/internal/withdraw"
 	"github.com/mkolibaba/gophermart/postgres"
+	"github.com/mkolibaba/gophermart/postgres/migration"
 	"go.uber.org/zap"
 	stdlog "log"
 )
@@ -33,6 +35,12 @@ func main() {
 	}
 
 	dbx := postgres.NewDBX(conn)
+
+	// TODO(improvement): использовать систему миграции
+	logger.Info("running database DDL migrations...")
+	if _, err := conn.Exec(ctx, migration.DDL); err != nil {
+		log.Fatalf("failed to run database ddl migrations: %s", err)
+	}
 
 	accrualClient := accrual.NewClient(cfg.AccrualSystemAddress, logger)
 	withdrawService := withdraw.NewService(dbx, dbx)
