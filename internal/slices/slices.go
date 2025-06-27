@@ -13,7 +13,6 @@ func Transform[Slice ~[]S, S any, R any](source Slice, fn func(S) R) []R {
 	return result
 }
 
-// TODO(improvement): покрыть сортировку тестами
 func SortByTimeDesc[Slice ~[]S, S any](source Slice, fn func(S) time.Time) {
 	slices.SortFunc(source, func(a, b S) int {
 		return fn(b).Compare(fn(a))

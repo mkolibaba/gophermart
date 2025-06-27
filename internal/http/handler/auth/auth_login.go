@@ -23,10 +23,10 @@ func (h *Handler) Login(c echo.Context) error {
 
 	user, err := h.userService.UserGet(c.Request().Context(), payload.Login)
 
-	// пользователь по заданному логину не найден
-	credentialsInvalid := err != nil && errors.Is(err, sql.ErrNoRows)
-	// проверка на совпадение паролей
-	if !credentialsInvalid {
+	var credentialsInvalid bool
+	if err != nil {
+		credentialsInvalid = errors.Is(err, sql.ErrNoRows)
+	} else {
 		credentialsInvalid = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(payload.Password)) != nil
 	}
 

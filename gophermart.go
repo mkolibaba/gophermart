@@ -61,6 +61,7 @@ type (
 	}
 
 	AccrualClient interface {
+		// GetOrder получает данные по заказу из системы расчета баллов лояльности
 		GetOrder(ctx context.Context, number string) (*AccrualOrder, error)
 	}
 )

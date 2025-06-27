@@ -11,3 +11,7 @@ tasks:
   run:
     cmds:
       - go run cmd/gophermart/main.go
+
+  test:
+    cmds:
+      - go test ./...
