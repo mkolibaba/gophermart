@@ -152,17 +152,6 @@ func (q *Queries) UserAddAccrualBalance(ctx context.Context, accrualBalance floa
 	return err
 }
 
-const userExists = `-- name: UserExists :one
-select exists (select 1 from "user" where login = $1)
-`
-
-func (q *Queries) UserExists(ctx context.Context, login string) (bool, error) {
-	row := q.db.QueryRow(ctx, userExists, login)
-	var exists bool
-	err := row.Scan(&exists)
-	return exists, err
-}
-
 const userGet = `-- name: UserGet :one
 select login, password, accrual_balance
 from "user"
@@ -171,20 +160,6 @@ where login = $1
 
 func (q *Queries) UserGet(ctx context.Context, login string) (*User, error) {
 	row := q.db.QueryRow(ctx, userGet, login)
-	var i User
-	err := row.Scan(&i.Login, &i.Password, &i.AccrualBalance)
-	return &i, err
-}
-
-const userGetForLoginAndPassword = `-- name: UserGetForLoginAndPassword :one
-select login, password, accrual_balance
-from "user"
-where login = $1
-  and password = $2
-`
-
-func (q *Queries) UserGetForLoginAndPassword(ctx context.Context, login string, password string) (*User, error) {
-	row := q.db.QueryRow(ctx, userGetForLoginAndPassword, login, password)
 	var i User
 	err := row.Scan(&i.Login, &i.Password, &i.AccrualBalance)
 	return &i, err

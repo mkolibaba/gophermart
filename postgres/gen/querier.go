@@ -16,9 +16,7 @@ type Querier interface {
 	OrderSave(ctx context.Context, iD string, userLogin string) error
 	OrderUpdateAccrual(ctx context.Context, arg OrderUpdateAccrualParams) error
 	UserAddAccrualBalance(ctx context.Context, accrualBalance float64, login string) error
-	UserExists(ctx context.Context, login string) (bool, error)
 	UserGet(ctx context.Context, login string) (*User, error)
-	UserGetForLoginAndPassword(ctx context.Context, login string, password string) (*User, error)
 	UserSave(ctx context.Context, login string, password string) error
 	WithdrawalGetAll(ctx context.Context, userLogin string) ([]*Withdrawal, error)
 	WithdrawalSave(ctx context.Context, arg WithdrawalSaveParams) error

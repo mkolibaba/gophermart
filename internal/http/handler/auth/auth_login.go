@@ -20,13 +20,14 @@ func (h *Handler) Login(c echo.Context) error {
 		return httperror.InvalidRequestBody(err)
 	}
 
-	user, err := h.userService.UserGetForLoginAndPassword(c.Request().Context(), payload.Login, payload.Password)
+	user, err := h.userService.UserGet(c.Request().Context(), payload.Login)
+	invalidCredentialsProvided :=
+		(err != nil && errors.Is(err, sql.ErrNoRows)) || (err == nil && user.Password != payload.Password)
+	if invalidCredentialsProvided {
+		// 401 — неверная пара логин/пароль
+		return echo.NewHTTPError(http.StatusUnauthorized, "invalid credentials")
+	}
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			// 401 — неверная пара логин/пароль
-			return echo.NewHTTPError(http.StatusUnauthorized, "invalid credentials")
-		}
-
 		// 500 — внутренняя ошибка сервера
 		return httperror.InternalServerError(err)
 	}

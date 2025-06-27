@@ -12,23 +12,32 @@ var (
 
 type (
 	OrderService interface {
+		// OrderGet возвращает заказ по переданному id
 		OrderGet(ctx context.Context, id string) (*postgres.Order, error)
+
+		// OrderGetAll возвращает все заказы пользователя
 		OrderGetAll(ctx context.Context, userLogin string) ([]*postgres.Order, error)
+
+		// OrderSave создает заказ с переданными параметрами
 		OrderSave(ctx context.Context, id string, userLogin string) error
 	}
 
 	UserService interface {
+		// UserGet возвращает пользователя по переданному login
 		UserGet(ctx context.Context, login string) (*postgres.User, error)
+
+		// UserSave создает пользователя с переданными параметрами
 		UserSave(ctx context.Context, login string, password string) error
-		UserExists(ctx context.Context, login string) (bool, error)
-		UserGetForLoginAndPassword(ctx context.Context, login, password string) (*postgres.User, error)
 
 		// UserAddAccrualBalance начисляет на баланс пользователя заданную сумму
 		UserAddAccrualBalance(ctx context.Context, sum float64, login string) error
 	}
 
 	BalanceService interface {
+		// BalanceGet возвращает информацию о текущем балансе и сумме списаний пользователя
 		BalanceGet(ctx context.Context, userLogin string) (*postgres.BalanceGetRow, error)
+
+		// WithdrawalGetAll возвращает все списания пользователя
 		WithdrawalGetAll(ctx context.Context, userLogin string) ([]*postgres.Withdrawal, error)
 	}
 
@@ -40,6 +49,8 @@ type (
 
 	Querier interface {
 		postgres.Querier
+
+		// DoInTx выполняет переданную функцию в транзакции qtx
 		DoInTx(ctx context.Context, fn func(qtx postgres.Querier) error) error
 	}
 

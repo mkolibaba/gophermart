@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/labstack/echo/v4"
 	httperror "github.com/mkolibaba/gophermart/internal/http/error"
 	"net/http"
@@ -20,19 +21,13 @@ func (h *Handler) Register(c echo.Context) error {
 		return httperror.InvalidRequestBody(err)
 	}
 
-	exists, err := h.userService.UserExists(ctx, payload.Login)
-	if err != nil {
-		// 500 — внутренняя ошибка сервера
-		return httperror.InternalServerError(err)
-	}
-	if exists {
-		// 409 — логин уже занят
-		// TODO(improvement): кейс можно совместить с userService.UserSave и проверять возвращаемый err
-		return echo.NewHTTPError(http.StatusConflict, "user already exists")
-	}
-
 	// TODO(improvement): не хранить пароли в открытом виде
 	if err := h.userService.UserSave(ctx, payload.Login, payload.Password); err != nil {
+		if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == "23505" {
+			// 409 — логин уже занят
+			return echo.NewHTTPError(http.StatusConflict, "user already exists")
+		}
+
 		// 500 — внутренняя ошибка сервера
 		return httperror.InternalServerError(err)
 	}

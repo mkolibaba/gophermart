@@ -3,9 +3,6 @@ select *
 from "user"
 where login = $1;
 
--- name: UserExists :one
-select exists (select 1 from "user" where login = $1);
-
 -- name: UserSave :exec
 insert into "user" (login, password)
 values ($1, $2);
@@ -14,12 +11,6 @@ values ($1, $2);
 update "user"
 set accrual_balance = accrual_balance + $1
 where login = $2;
-
--- name: UserGetForLoginAndPassword :one
-select *
-from "user"
-where login = $1
-  and password = $2;
 
 -- name: OrderGet :one
 select *
