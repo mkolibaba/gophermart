@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"github.com/jackc/pgx/v5"
-	"github.com/labstack/gommon/log"
 	"github.com/mkolibaba/gophermart/internal/config"
 	"github.com/mkolibaba/gophermart/internal/http"
 	"github.com/mkolibaba/gophermart/internal/http/client/accrual"
@@ -29,6 +28,8 @@ func main() {
 	}
 	logger := unsugaredLogger.Sugar()
 
+	logger.Infof("provided configuration: %+v", cfg)
+
 	conn, err := pgx.Connect(ctx, cfg.DatabaseURI)
 	if err != nil {
 		fail(err)
@@ -39,7 +40,7 @@ func main() {
 	// TODO(improvement): использовать систему миграции
 	logger.Info("running database DDL migrations...")
 	if _, err := conn.Exec(ctx, migration.DDL); err != nil {
-		log.Fatalf("failed to run database ddl migrations: %s", err)
+		logger.Fatalf("failed to run database ddl migrations: %s", err)
 	}
 
 	accrualClient := accrual.NewClient(cfg.AccrualSystemAddress, logger)
