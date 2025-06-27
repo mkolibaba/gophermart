@@ -4,6 +4,7 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/labstack/echo/v4"
 	httperror "github.com/mkolibaba/gophermart/internal/http/error"
+	"golang.org/x/crypto/bcrypt"
 	"net/http"
 )
 
@@ -21,8 +22,13 @@ func (h *Handler) Register(c echo.Context) error {
 		return httperror.InvalidRequestBody(err)
 	}
 
-	// TODO(improvement): не хранить пароли в открытом виде
-	if err := h.userService.UserSave(ctx, payload.Login, payload.Password); err != nil {
+	password, err := bcrypt.GenerateFromPassword([]byte(payload.Password), bcrypt.DefaultCost)
+	if err != nil {
+		// 500 — внутренняя ошибка сервера
+		return httperror.InternalServerError(err)
+	}
+
+	if err := h.userService.UserSave(ctx, payload.Login, string(password)); err != nil {
 		if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == "23505" {
 			// 409 — логин уже занят
 			return echo.NewHTTPError(http.StatusConflict, "user already exists")

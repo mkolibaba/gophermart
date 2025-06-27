@@ -5,6 +5,7 @@ import (
 	"errors"
 	"github.com/labstack/echo/v4"
 	httperror "github.com/mkolibaba/gophermart/internal/http/error"
+	"golang.org/x/crypto/bcrypt"
 	"net/http"
 )
 
@@ -21,9 +22,13 @@ func (h *Handler) Login(c echo.Context) error {
 	}
 
 	user, err := h.userService.UserGet(c.Request().Context(), payload.Login)
-	invalidCredentialsProvided :=
-		(err != nil && errors.Is(err, sql.ErrNoRows)) || (err == nil && user.Password != payload.Password)
-	if invalidCredentialsProvided {
+
+	credentialsValid := err != nil && errors.Is(err, sql.ErrNoRows)
+	if credentialsValid {
+		credentialsValid = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(payload.Password)) == nil
+	}
+
+	if !credentialsValid {
 		// 401 — неверная пара логин/пароль
 		return echo.NewHTTPError(http.StatusUnauthorized, "invalid credentials")
 	}
