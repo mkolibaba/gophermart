@@ -12,15 +12,29 @@ const (
 	issuer    = "gophermart"
 )
 
-func NewJWT(login string) (string, error) {
+type Service struct {
+	JWTSecretKey  string
+	JWTTimeToLive time.Duration
+	JWTIssuer     string
+}
+
+func NewService() *Service {
+	return &Service{
+		JWTIssuer:     issuer,
+		JWTTimeToLive: ttl,
+		JWTSecretKey:  secretKey,
+	}
+}
+
+func (s *Service) NewJWT(login string) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.RegisteredClaims{
 		Subject:   login,
-		Issuer:    issuer,
+		Issuer:    s.JWTIssuer,
 		IssuedAt:  jwt.NewNumericDate(time.Now()),
-		ExpiresAt: jwt.NewNumericDate(time.Now().Add(ttl)),
+		ExpiresAt: jwt.NewNumericDate(time.Now().Add(s.JWTTimeToLive)),
 	})
 
-	signed, err := token.SignedString([]byte(secretKey))
+	signed, err := token.SignedString([]byte(s.JWTSecretKey))
 	if err != nil {
 		return "", err
 	}
@@ -28,12 +42,12 @@ func NewJWT(login string) (string, error) {
 	return signed, nil
 }
 
-func GetClaims(tokenString string) (jwt.Claims, error) {
+func (s *Service) GetClaims(tokenString string) (jwt.Claims, error) {
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("error: unexpected signing method")
 		}
-		return []byte(secretKey), nil
+		return []byte(s.JWTSecretKey), nil
 	})
 
 	if err != nil {

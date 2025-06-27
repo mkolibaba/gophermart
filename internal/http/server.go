@@ -15,6 +15,7 @@ type Server struct {
 	Address         string
 	Logger          *zap.SugaredLogger
 	Querier         gophermart.Querier
+	AuthService     gophermart.AuthService
 	OrderService    gophermart.OrderService
 	WithdrawService gophermart.WithdrawService
 }
@@ -23,7 +24,7 @@ func (s *Server) Start(ctx context.Context) {
 	router := echo.New()
 
 	// handlers
-	authHandler := auth.NewHandler(s.Querier)
+	authHandler := auth.NewHandler(s.Querier, s.AuthService)
 	ordersHandler := orders.NewHandler(s.OrderService)
 	balanceHandler := balance.NewHandler(s.Querier, s.WithdrawService)
 
@@ -32,7 +33,7 @@ func (s *Server) Start(ctx context.Context) {
 	apiUserRouter.POST("/login", authHandler.Login)
 
 	securedRouter := apiUserRouter.Group("")
-	securedRouter.Use(middleware.Auth())
+	securedRouter.Use(middleware.Auth(s.AuthService))
 
 	securedRouter.POST("/orders", ordersHandler.Create)
 	securedRouter.GET("/orders", ordersHandler.GetAll)

@@ -3,6 +3,7 @@ package gophermart
 import (
 	"context"
 	"errors"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/mkolibaba/gophermart/postgres/gen"
 )
 
@@ -11,6 +12,14 @@ var (
 )
 
 type (
+	AuthService interface {
+		// NewJWT создает JWT для переданного логина
+		NewJWT(login string) (string, error)
+
+		// GetClaims получает JWT Claims из переданного токена
+		GetClaims(tokenString string) (jwt.Claims, error)
+	}
+
 	OrderService interface {
 		// OrderGet возвращает заказ по переданному id
 		OrderGet(ctx context.Context, id string) (*postgres.Order, error)

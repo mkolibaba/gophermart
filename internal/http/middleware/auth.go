@@ -2,12 +2,12 @@ package middleware
 
 import (
 	"github.com/labstack/echo/v4"
-	"github.com/mkolibaba/gophermart/internal/auth"
+	"github.com/mkolibaba/gophermart"
 	httperror "github.com/mkolibaba/gophermart/internal/http/error"
 	"strings"
 )
 
-func Auth() echo.MiddlewareFunc {
+func Auth(authService gophermart.AuthService) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			tokenString := extractJWTFromAuthorizationHeader(c)
@@ -20,7 +20,7 @@ func Auth() echo.MiddlewareFunc {
 				return httperror.Unauthorized("no credentials provided")
 			}
 
-			claims, err := auth.GetClaims(tokenString)
+			claims, err := authService.GetClaims(tokenString)
 			if err != nil {
 				// 401 — пользователь не авторизован
 				return httperror.Unauthorized("invalid credentials")

@@ -3,28 +3,33 @@ package auth
 import (
 	"github.com/labstack/echo/v4"
 	"github.com/mkolibaba/gophermart"
-	"github.com/mkolibaba/gophermart/internal/auth"
 	"net/http"
 	"time"
 )
 
 const (
 	jwtCookieName = "jwt"
-	jwtPath       = "/"
+	jwtCookiePath = "/"
 )
 
 type Handler struct {
-	userService gophermart.UserService
+	JWTCookieName string
+	JWTCookiePath string
+	userService   gophermart.UserService
+	authService   gophermart.AuthService
 }
 
-func NewHandler(userService gophermart.UserService) *Handler {
+func NewHandler(userService gophermart.UserService, authService gophermart.AuthService) *Handler {
 	return &Handler{
-		userService: userService,
+		JWTCookieName: jwtCookieName,
+		JWTCookiePath: jwtCookiePath,
+		userService:   userService,
+		authService:   authService,
 	}
 }
 
 func (h *Handler) setJWTCookie(c echo.Context, userLogin string) error {
-	token, err := auth.NewJWT(userLogin)
+	token, err := h.authService.NewJWT(userLogin)
 	if err != nil {
 		return err
 	}
@@ -33,10 +38,10 @@ func (h *Handler) setJWTCookie(c echo.Context, userLogin string) error {
 	expireCookie := time.Now().Add(time.Hour)
 	maxAge := int(expireCookie.Unix() - time.Now().Unix())
 	c.SetCookie(&http.Cookie{
-		Name:     jwtCookieName,
+		Name:     h.JWTCookieName,
 		Value:    token,
 		MaxAge:   maxAge,
-		Path:     jwtPath,
+		Path:     h.JWTCookiePath,
 		HttpOnly: true,
 	})
 

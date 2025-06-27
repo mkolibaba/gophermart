@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"github.com/jackc/pgx/v5"
+	"github.com/mkolibaba/gophermart/internal/auth"
 	"github.com/mkolibaba/gophermart/internal/config"
 	"github.com/mkolibaba/gophermart/internal/http"
 	"github.com/mkolibaba/gophermart/internal/http/client/accrual"
@@ -45,6 +46,7 @@ func main() {
 	}
 
 	accrualClient := accrual.NewClient(cfg.AccrualSystemAddress, logger)
+	authService := auth.NewService()
 	withdrawService := withdraw.NewService(dbx, dbx)
 	ordersService := orders.NewService(dbx, accrualClient, logger)
 	ordersService.StartAccrualFetching(ctx)
@@ -53,6 +55,7 @@ func main() {
 		Address:         cfg.RunAddress,
 		Logger:          logger,
 		Querier:         dbx,
+		AuthService:     authService,
 		OrderService:    ordersService,
 		WithdrawService: withdrawService,
 	}
