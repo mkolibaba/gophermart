@@ -11,7 +11,7 @@ import (
 
 const (
 	workers         = 5
-	fetchTick       = 15 * time.Second
+	fetchTick       = 5 * time.Second
 	ordersBatchSize = workers
 )
 
@@ -57,7 +57,7 @@ func (s *Service) StartAccrualFetching(ctx context.Context) {
 					}
 
 					if response.Status == "PROCESSED" {
-						s.logger.Debugf("updating order status to %d", response.Accrual)
+						s.logger.Debugf("updating user balance to %f", response.Accrual)
 						if err := qtx.UserAddAccrualBalance(ctx, response.Accrual, order.UserLogin); err != nil {
 							return fmt.Errorf("accrual balance update: %w", err)
 						}
