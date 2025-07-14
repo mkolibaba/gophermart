@@ -41,7 +41,7 @@ func main() {
 
 	// TODO(improvement): использовать систему миграции
 	logger.Info("running database DDL migrations...")
-	if _, err := conn.Exec(ctx, migration.DDL); err != nil {
+	if err := runMigrations(ctx, conn); err != nil {
 		logger.Fatalf("failed to run database ddl migrations: %s", err)
 	}
 
@@ -60,4 +60,18 @@ func main() {
 		WithdrawService: withdrawService,
 	}
 	server.Start(ctx)
+}
+
+func runMigrations(ctx context.Context, conn *pgx.Conn) error {
+	tx, err := conn.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+
+	if _, err := conn.Exec(ctx, migration.DDL); err != nil {
+		return err
+	}
+
+	return tx.Commit(ctx)
 }

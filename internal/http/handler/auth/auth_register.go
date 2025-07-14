@@ -1,9 +1,9 @@
 package auth
 
 import (
-	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/labstack/echo/v4"
 	httperror "github.com/mkolibaba/gophermart/internal/http/error"
+	"github.com/mkolibaba/gophermart/postgres"
 	"golang.org/x/crypto/bcrypt"
 	"net/http"
 )
@@ -29,7 +29,7 @@ func (h *Handler) Register(c echo.Context) error {
 	}
 
 	if err := h.userService.UserSave(ctx, payload.Login, string(password)); err != nil {
-		if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == "23505" {
+		if postgres.IsUniqueViolationError(err) {
 			// 409 — логин уже занят
 			return echo.NewHTTPError(http.StatusConflict, "user already exists")
 		}

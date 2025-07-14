@@ -5,9 +5,18 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
+const claimsKey = "claims"
+
+func StoreClaimsToContext(c echo.Context, claims jwt.Claims) {
+	c.Set(claimsKey, claims)
+}
+
+func RetrieveClaimsFromContext(c echo.Context) jwt.Claims {
+	return c.Get(claimsKey).(jwt.Claims)
+}
+
 func RetrieveUserLoginFromContext(c echo.Context) string {
-	claims := c.Get("claims")
 	// имплементация всегда возвращает err = nil
-	subject, _ := claims.(jwt.Claims).GetSubject()
+	subject, _ := RetrieveClaimsFromContext(c).GetSubject()
 	return subject
 }

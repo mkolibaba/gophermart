@@ -4,6 +4,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/mkolibaba/gophermart"
 	httperror "github.com/mkolibaba/gophermart/internal/http/error"
+	"github.com/mkolibaba/gophermart/internal/http/security"
 	"strings"
 )
 
@@ -26,7 +27,7 @@ func Auth(authService gophermart.AuthService) echo.MiddlewareFunc {
 				return httperror.Unauthorized("invalid credentials")
 			}
 
-			c.Set("claims", claims)
+			security.StoreClaimsToContext(c, claims)
 			return next(c)
 		}
 	}

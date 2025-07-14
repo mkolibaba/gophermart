@@ -2,9 +2,12 @@ package accrual
 
 import (
 	"context"
+	"fmt"
 	"github.com/mkolibaba/gophermart"
 	"go.uber.org/zap"
+	"net/http"
 	"resty.dev/v3"
+	"time"
 )
 
 type Client struct {
@@ -16,7 +19,10 @@ func NewClient(accrualAddress string, logger *zap.SugaredLogger) *Client {
 		client: resty.New().
 			SetBaseURL(accrualAddress).
 			SetScheme("http").
+			// retry настройки учитывают 429 (и Retry-After хедер) и 500+ статусы
 			SetRetryCount(2).
+			SetRetryWaitTime(2 * time.Second).
+			SetRetryMaxWaitTime(5 * time.Second).
 			SetLogger(logger),
 	}
 }
@@ -30,6 +36,9 @@ func (c *Client) GetOrder(ctx context.Context, number string) (*gophermart.Accru
 		return nil, err
 	}
 
-	// TODO: обработать возможные статусы
+	if response.StatusCode() == http.StatusNoContent {
+		return nil, fmt.Errorf("order has not been registered")
+	}
+
 	return response.Result().(*gophermart.AccrualOrder), nil
 }

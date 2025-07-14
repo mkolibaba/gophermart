@@ -72,8 +72,6 @@ func (s *Service) StartAccrualFetching(ctx context.Context) {
 		}
 	}
 
-	// TODO(improvement): никто не гарантирует, что за тик обработаются все заказы,
-	//  т.е. в канале может оказаться дважды один и тот же заказ
 	ch := make(chan *postgres.Order, ordersBatchSize)
 
 	for range workers {
@@ -84,6 +82,11 @@ func (s *Service) StartAccrualFetching(ctx context.Context) {
 		for {
 			select {
 			case <-ticker.C:
+				if len(ch) > 0 {
+					// не складываем в канал заказы, если предыдущие не обработаны
+					continue
+				}
+
 				result, err := s.OrderGetWithNonFinalAccrualStatus(ctx, ordersBatchSize)
 				if err != nil {
 					s.logger.Errorf("failed to get orders to process: %s", err)

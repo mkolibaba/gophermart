@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"fmt"
 	"github.com/labstack/echo/v4"
 	"github.com/mkolibaba/gophermart"
 	"net/http"
@@ -31,7 +32,7 @@ func NewHandler(userService gophermart.UserService, authService gophermart.AuthS
 func (h *Handler) setJWTCookie(c echo.Context, userLogin string) error {
 	token, err := h.authService.NewJWT(userLogin)
 	if err != nil {
-		return err
+		return fmt.Errorf("jwt cookie: %w", err)
 	}
 
 	// TODO(improvement): выставлять expireCookie = jwt.ExpiresAt

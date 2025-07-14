@@ -36,7 +36,7 @@ func (s *Service) NewJWT(login string) (string, error) {
 
 	signed, err := token.SignedString([]byte(s.JWTSecretKey))
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("auth: jwt signing: %w", err)
 	}
 
 	return signed, nil
