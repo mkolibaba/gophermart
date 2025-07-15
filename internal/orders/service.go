@@ -2,6 +2,7 @@ package orders
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/mkolibaba/gophermart"
 	"github.com/mkolibaba/gophermart/postgres/gen"
@@ -39,10 +40,18 @@ func NewService(querier gophermart.Querier, accrualClient gophermart.AccrualClie
 func (s *Service) StartAccrualFetching(ctx context.Context) {
 	ticker := time.NewTicker(fetchTick)
 
-	worker := func(in <-chan *postgres.Order) {
+	worker := func(in chan *postgres.Order) {
 		for order := range in {
 			response, err := s.accrualClient.GetOrder(ctx, order.ID)
 			if err != nil {
+				var retryErr *gophermart.RetryAfterError
+				if errors.As(err, retryErr) {
+					// ждем указанное время и отправляем этот же заказ обратно в канал на повторную обработку
+					time.Sleep(time.Second * time.Duration(retryErr.Interval))
+					in <- order
+					continue
+				}
+
 				s.logger.Errorf("failed to get accrual response: %s", err)
 				return
 			}

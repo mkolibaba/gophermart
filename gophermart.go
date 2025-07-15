@@ -3,6 +3,7 @@ package gophermart
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/mkolibaba/gophermart/postgres/gen"
 )
@@ -73,4 +74,12 @@ type (
 		// GetOrder получает данные по заказу из системы расчета баллов лояльности
 		GetOrder(ctx context.Context, number string) (*AccrualOrder, error)
 	}
+
+	RetryAfterError struct {
+		Interval int64
+	}
 )
+
+func (e RetryAfterError) Error() string {
+	return fmt.Sprintf("can not handle requests in %d seconds", e.Interval)
+}
