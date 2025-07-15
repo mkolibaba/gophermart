@@ -6,14 +6,14 @@ import (
 	"net/http"
 )
 
-func InvalidRequestBody(msg any) *echo.HTTPError {
+func InvalidRequestBody(msg any) error {
 	return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid request body: %s", msg))
 }
 
-func InternalServerError(msg any) *echo.HTTPError {
-	return echo.NewHTTPError(http.StatusInternalServerError, msg)
+func InternalServerError(err error) error {
+	return err
 }
 
-func Unauthorized(msg any) *echo.HTTPError {
+func Unauthorized(msg any) error {
 	return echo.NewHTTPError(http.StatusUnauthorized, msg)
 }
