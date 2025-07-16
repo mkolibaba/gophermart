@@ -1,0 +1,14 @@
+version: "2"
+sql:
+  - engine: "postgresql"
+    queries: "migration/query.sql"
+    schema: "migration/schema.sql"
+    gen:
+      go:
+        package: "postgres"
+        out: "gen"
+        sql_package: "pgx/v5"
+        emit_interface: true
+        emit_result_struct_pointers: true
+        emit_pointers_for_null_types: true
+        query_parameter_limit: 2
