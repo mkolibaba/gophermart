@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/mkolibaba/gophermart"
+	"github.com/mkolibaba/gophermart/internal/config"
 	"go.uber.org/zap"
 	"net/http"
 	"resty.dev/v3"
@@ -14,10 +15,10 @@ type Client struct {
 	client *resty.Client
 }
 
-func NewClient(accrualAddress string, logger *zap.SugaredLogger) *Client {
+func NewClient(cfg *config.Config, logger *zap.SugaredLogger) *Client {
 	return &Client{
 		client: resty.New().
-			SetBaseURL(accrualAddress).
+			SetBaseURL(cfg.AccrualSystemAddress).
 			SetScheme("http").
 			SetLogger(logger),
 	}
