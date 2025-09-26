@@ -68,7 +68,7 @@ func main() {
 			config.New,
 			NewSugaredLogger,
 			NewPostgresConnection,
-			fx.Annotate(postgres.NewDBX, fx.As(new(gophermart.Querier))),
+			fx.Annotate(postgres.NewDBX, fx.As(new(gophermart.Querier)), fx.As(new(gophermart.UserService))),
 			fx.Annotate(accrual.NewClient, fx.As(new(gophermart.AccrualClient))),
 			fx.Annotate(auth.NewService, fx.As(new(gophermart.AuthService))),
 			fx.Annotate(withdraw.NewService, fx.As(new(gophermart.WithdrawService))),
