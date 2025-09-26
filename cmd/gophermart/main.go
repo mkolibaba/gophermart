@@ -25,8 +25,15 @@ func NewSugaredLogger() *zap.SugaredLogger {
 	return unsugaredLogger.Sugar()
 }
 
-func NewPostgresConnection(ctx context.Context, cfg *config.Config) (*pgx.Conn, error) {
-	return pgx.Connect(ctx, cfg.DatabaseURI)
+func NewPostgresConnection(lc fx.Lifecycle, cfg *config.Config) *pgx.Conn {
+	var conn *pgx.Conn
+	lc.Append(fx.Hook{
+		OnStart: func(ctx context.Context) (err error) {
+			conn, err = pgx.Connect(ctx, cfg.DatabaseURI)
+			return err
+		},
+	})
+	return conn
 }
 
 func NewHTTPService(
@@ -57,23 +64,36 @@ func NewHTTPService(
 
 func main() {
 	fx.New(
-		fx.Provide(config.New),
-		fx.Provide(NewSugaredLogger),
-		fx.Provide(NewPostgresConnection),
-		fx.Provide(postgres.NewDBX),
-		fx.Provide(accrual.NewClient),
-		fx.Provide(auth.NewService),
-		fx.Provide(withdraw.NewService),
-		fx.Provide(orders.NewService),
-		fx.Invoke(func(ctx context.Context, conn *pgx.Conn, logger *zap.SugaredLogger) {
-			logger.Info("running database DDL migrations...")
-			if err := runMigrations(ctx, conn); err != nil {
-				logger.Fatalf("failed to run database ddl migrations: %s", err)
-			}
-		}),
-		fx.Invoke(func(ctx context.Context, ordersService *orders.Service) {
-			ordersService.StartAccrualFetching(ctx)
-		}),
+		fx.Provide(
+			config.New,
+			NewSugaredLogger,
+			NewPostgresConnection,
+			fx.Annotate(postgres.NewDBX, fx.As(new(gophermart.Querier))),
+			fx.Annotate(accrual.NewClient, fx.As(new(gophermart.AccrualClient))),
+			fx.Annotate(auth.NewService, fx.As(new(gophermart.AuthService))),
+			fx.Annotate(withdraw.NewService, fx.As(new(gophermart.WithdrawService))),
+			fx.Annotate(orders.NewService, fx.As(new(gophermart.OrderService))),
+			NewHTTPService,
+		),
+		fx.Invoke(
+			func(lc fx.Lifecycle, conn *pgx.Conn, logger *zap.SugaredLogger) {
+				lc.Append(fx.Hook{
+					OnStart: func(ctx context.Context) error {
+						logger.Info("running database DDL migrations...")
+						return runMigrations(ctx, conn)
+					},
+				})
+			},
+			func(lc fx.Lifecycle, ordersService gophermart.OrderService) {
+				lc.Append(fx.Hook{
+					OnStart: func(ctx context.Context) error {
+						ordersService.StartAccrualFetching(ctx)
+						return nil
+					},
+				})
+			},
+			func(*http.Server) {},
+		),
 	).Run()
 }
 
