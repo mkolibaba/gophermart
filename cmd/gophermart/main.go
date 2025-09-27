@@ -38,6 +38,20 @@ func NewConfig() (*config.Config, error) {
 	return cfg, nil
 }
 
+func RunMigrations(lc fx.Lifecycle, conn *pgx.Conn, logger *zap.SugaredLogger) {
+	lc.Append(fx.StartHook(func(ctx context.Context) error {
+		logger.Info("running database DDL migrations...")
+		return migration.Run(ctx, conn)
+	}))
+}
+
+func StartAccrualFetching(lc fx.Lifecycle, ordersService gophermart.OrderService) {
+	lc.Append(fx.StartHook(ordersService.StartAccrualFetching))
+}
+
+func RunServer(*http.Server) {
+}
+
 func main() {
 	fx.New(
 		fx.Provide(
@@ -52,16 +66,9 @@ func main() {
 			http.NewServer,
 		),
 		fx.Invoke(
-			func(lc fx.Lifecycle, conn *pgx.Conn, logger *zap.SugaredLogger) {
-				lc.Append(fx.StartHook(func(ctx context.Context) error {
-					logger.Info("running database DDL migrations...")
-					return migration.Run(ctx, conn)
-				}))
-			},
-			func(lc fx.Lifecycle, ordersService gophermart.OrderService) {
-				lc.Append(fx.StartHook(ordersService.StartAccrualFetching))
-			},
-			func(*http.Server) {},
+			RunMigrations,
+			StartAccrualFetching,
+			RunServer,
 		),
 	).Run()
 }
