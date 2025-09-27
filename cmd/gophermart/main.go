@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"github.com/jackc/pgx/v5"
+	"github.com/mkolibaba/gophermart"
 	"github.com/mkolibaba/gophermart/internal/auth"
 	"github.com/mkolibaba/gophermart/internal/config"
 	"github.com/mkolibaba/gophermart/internal/http"
@@ -11,67 +12,63 @@ import (
 	"github.com/mkolibaba/gophermart/internal/withdraw"
 	"github.com/mkolibaba/gophermart/postgres"
 	"github.com/mkolibaba/gophermart/postgres/migration"
+	"go.uber.org/fx"
 	"go.uber.org/zap"
 	stdlog "log"
 )
 
-func main() {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	cfg, err := config.New()
-	if err != nil {
-		stdlog.Fatal(err)
-	}
-
+func NewSugaredLogger() *zap.SugaredLogger {
 	unsugaredLogger, err := zap.NewDevelopment()
 	if err != nil {
 		stdlog.Fatal(err)
 	}
-	logger := unsugaredLogger.Sugar()
-
-	logger.Infof("provided configuration: %+v", cfg)
-
-	conn, err := pgx.Connect(ctx, cfg.DatabaseURI)
-	if err != nil {
-		logger.Fatal(err)
-	}
-
-	dbx := postgres.NewDBX(conn)
-
-	// TODO(improvement): использовать систему миграции
-	logger.Info("running database DDL migrations...")
-	if err := runMigrations(ctx, conn); err != nil {
-		logger.Fatalf("failed to run database ddl migrations: %s", err)
-	}
-
-	accrualClient := accrual.NewClient(cfg.AccrualSystemAddress, logger)
-	authService := auth.NewService()
-	withdrawService := withdraw.NewService(dbx, dbx)
-	ordersService := orders.NewService(dbx, accrualClient, logger)
-	ordersService.StartAccrualFetching(ctx)
-
-	server := &http.Server{
-		Address:         cfg.RunAddress,
-		Logger:          logger,
-		Querier:         dbx,
-		AuthService:     authService,
-		OrderService:    ordersService,
-		WithdrawService: withdrawService,
-	}
-	server.Start(ctx)
+	return unsugaredLogger.Sugar()
 }
 
-func runMigrations(ctx context.Context, conn *pgx.Conn) error {
-	tx, err := conn.Begin(ctx)
+func NewPostgresConnection(cfg *config.Config) (*pgx.Conn, error) {
+	return pgx.Connect(context.Background(), cfg.DatabaseURI)
+}
+
+func NewConfig() (*config.Config, error) {
+	cfg, err := config.New()
 	if err != nil {
-		return err
+		return nil, err
 	}
-	defer tx.Rollback(ctx)
+	stdlog.Printf("provided configuration: %+v", cfg)
+	return cfg, nil
+}
 
-	if _, err := conn.Exec(ctx, migration.DDL); err != nil {
-		return err
-	}
+func RunMigrations(lc fx.Lifecycle, conn *pgx.Conn, logger *zap.SugaredLogger) {
+	lc.Append(fx.StartHook(func(ctx context.Context) error {
+		logger.Info("running database DDL migrations...")
+		return migration.Run(ctx, conn)
+	}))
+}
 
-	return tx.Commit(ctx)
+func StartAccrualFetching(lc fx.Lifecycle, ordersService gophermart.OrderService) {
+	lc.Append(fx.StartHook(ordersService.StartAccrualFetching))
+}
+
+func RunServer(*http.Server) {
+}
+
+func main() {
+	fx.New(
+		fx.Provide(
+			NewConfig,
+			NewSugaredLogger,
+			NewPostgresConnection,
+			fx.Annotate(postgres.NewDBX, fx.As(new(gophermart.Querier)), fx.As(new(gophermart.UserService))),
+			fx.Annotate(accrual.NewClient, fx.As(new(gophermart.AccrualClient))),
+			fx.Annotate(auth.NewService, fx.As(new(gophermart.AuthService))),
+			fx.Annotate(withdraw.NewService, fx.As(new(gophermart.WithdrawService))),
+			fx.Annotate(orders.NewService, fx.As(new(gophermart.OrderService))),
+			http.NewServer,
+		),
+		fx.Invoke(
+			RunMigrations,
+			StartAccrualFetching,
+			RunServer,
+		),
+	).Run()
 }

@@ -30,6 +30,8 @@ type (
 
 		// OrderSave создает заказ с переданными параметрами
 		OrderSave(ctx context.Context, id string, userLogin string) error
+
+		StartAccrualFetching(ctx context.Context)
 	}
 
 	UserService interface {
