@@ -29,32 +29,6 @@ func NewPostgresConnection(cfg *config.Config) (*pgx.Conn, error) {
 	return pgx.Connect(context.Background(), cfg.DatabaseURI)
 }
 
-func NewHTTPService(
-	lc fx.Lifecycle,
-	cfg *config.Config,
-	logger *zap.SugaredLogger,
-	dbx gophermart.Querier,
-	authService gophermart.AuthService,
-	ordersService gophermart.OrderService,
-	withdrawService gophermart.WithdrawService,
-) *http.Server {
-	h := &http.Server{
-		Address:         cfg.RunAddress,
-		Logger:          logger,
-		Querier:         dbx,
-		AuthService:     authService,
-		OrderService:    ordersService,
-		WithdrawService: withdrawService,
-	}
-	lc.Append(fx.Hook{
-		OnStart: func(ctx context.Context) error {
-			go h.Start(ctx)
-			return nil
-		},
-	})
-	return h
-}
-
 func NewConfig() (*config.Config, error) {
 	cfg, err := config.New()
 	if err != nil {
@@ -75,40 +49,19 @@ func main() {
 			fx.Annotate(auth.NewService, fx.As(new(gophermart.AuthService))),
 			fx.Annotate(withdraw.NewService, fx.As(new(gophermart.WithdrawService))),
 			fx.Annotate(orders.NewService, fx.As(new(gophermart.OrderService))),
-			NewHTTPService,
+			http.NewServer,
 		),
 		fx.Invoke(
 			func(lc fx.Lifecycle, conn *pgx.Conn, logger *zap.SugaredLogger) {
-				lc.Append(fx.Hook{
-					OnStart: func(ctx context.Context) error {
-						logger.Info("running database DDL migrations...")
-						return runMigrations(ctx, conn)
-					},
-				})
+				lc.Append(fx.StartHook(func(ctx context.Context) error {
+					logger.Info("running database DDL migrations...")
+					return migration.Run(ctx, conn)
+				}))
 			},
 			func(lc fx.Lifecycle, ordersService gophermart.OrderService) {
-				lc.Append(fx.Hook{
-					OnStart: func(ctx context.Context) error {
-						ordersService.StartAccrualFetching(ctx)
-						return nil
-					},
-				})
+				lc.Append(fx.StartHook(ordersService.StartAccrualFetching))
 			},
 			func(*http.Server) {},
 		),
 	).Run()
-}
-
-func runMigrations(ctx context.Context, conn *pgx.Conn) error {
-	tx, err := conn.Begin(ctx)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback(ctx)
-
-	if _, err := conn.Exec(ctx, migration.DDL); err != nil {
-		return err
-	}
-
-	return tx.Commit(ctx)
 }
