@@ -25,15 +25,8 @@ func NewSugaredLogger() *zap.SugaredLogger {
 	return unsugaredLogger.Sugar()
 }
 
-func NewPostgresConnection(lc fx.Lifecycle, cfg *config.Config) *pgx.Conn {
-	var conn *pgx.Conn
-	lc.Append(fx.Hook{
-		OnStart: func(ctx context.Context) (err error) {
-			conn, err = pgx.Connect(ctx, cfg.DatabaseURI)
-			return err
-		},
-	})
-	return conn
+func NewPostgresConnection(cfg *config.Config) (*pgx.Conn, error) {
+	return pgx.Connect(context.Background(), cfg.DatabaseURI)
 }
 
 func NewHTTPService(
@@ -62,10 +55,19 @@ func NewHTTPService(
 	return h
 }
 
+func NewConfig() (*config.Config, error) {
+	cfg, err := config.New()
+	if err != nil {
+		return nil, err
+	}
+	stdlog.Printf("provided configuration: %+v", cfg)
+	return cfg, nil
+}
+
 func main() {
 	fx.New(
 		fx.Provide(
-			config.New,
+			NewConfig,
 			NewSugaredLogger,
 			NewPostgresConnection,
 			fx.Annotate(postgres.NewDBX, fx.As(new(gophermart.Querier)), fx.As(new(gophermart.UserService))),
